@@ -1,12 +1,17 @@
 ---
 language: python
 python: "2.7"
-before_install:
- - sudo apt-get update -qq
- - sudo apt-get install -qq python-apt python-pycurl
+services:
+  - docker
+env:
+  global:
+    - ANSIBLE_HOST_KEY_CHECKING="False"
 install:
-  - pip install ansible==1.7.2
+  - pip install ansible docker-py
+  - ansible --version
+  - ansible-galaxy install -r tests/requirements.yml -p tests/roles/
 script:
-  - echo localhost > inventory
-  - ansible-playbook --syntax-check -i inventory test.yml
-  - ansible-playbook -i inventory test.yml --connection=local --sudo
+  - ansible-playbook --syntax-check -i tests/inventory tests/test.yml
+  - ansible-playbook -i tests/inventory tests/test.yml
+notifications:
+  webhooks: https://galaxy.ansible.com/api/v1/notifications/

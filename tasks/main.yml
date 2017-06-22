@@ -8,12 +8,21 @@
 
 - name: Gradle | apt-get update
   apt: update_cache=yes
-  
+  when: ansible_os_family == 'Debian'
+
 - name: Gradle | Install unzip
   apt: pkg=unzip state=latest
+  when: ansible_os_family == 'Debian'
+
+- name: Gradle | Install unzip
+  yum: name=unzip state=latest
+  when: ansible_os_family == 'RedHat'
 
 - name: Gradle | Unpack the compressed Gradle
-  command: unzip /tmp/gradle-{{gradle_version}}-all.zip -d /usr/local
+  unarchive:
+    src: /tmp/gradle-{{gradle_version}}-all.zip
+    dest: /usr/local
+    remote_src: yes
 
 - name: Grade | Rename Gradle folder
   command: mv /usr/local/gradle-{{gradle_version}} /usr/local/gradle
@@ -25,14 +34,15 @@
     mode: 0755
     recurse: yes
 
-- name: Gradle | Add the Gradle binary to the system path (/etc/profile)
-  lineinfile:
-    dest: /etc/profile
-    regexp: "{{item.regexp}}"
-    line: "{{item.line}}"
+- name: Install libselinux-python package for 'copy' task
+  yum:
+    name: libselinux-python
     state: present
-  with_items:
-    - regexp: "^GRADLE_HOME=/usr/local/gradle"
-      line: "GRADLE_HOME=/usr/local/gradle"
-    - regexp: "^PATH=.*GRADLE_HOME.*"
-      line: "PATH=$PATH:$GRADLE_HOME/bin"
+  when: ansible_os_family == "RedHat"
+
+- name: Gradle | Add the Gradle binary to the system path (/etc/profile.d/gradle.sh)
+  copy:
+    dest: /etc/profile.d/gradle.sh
+    content: |
+      export GRADLE_HOME=/usr/local/gradle
+      export PATH=$PATH:$GRADLE_HOME/bin

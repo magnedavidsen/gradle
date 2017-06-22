@@ -1,0 +1,39 @@
+---
+- name: "Bring testing containers up"
+  hosts: localhost
+  gather_facts: false
+  vars:
+    inventory:
+      - name: gradle_centos6
+        image: "chrismeyers/centos6"
+      - name: gradle_centos7
+        image: "chrismeyers/centos7"
+      - name: gradle_ubuntu12
+        image: "chrismeyers/ubuntu12.04"
+      - name: gradle_ubuntu14
+        image: "nimmis/ubuntu:14.04"
+      - name: gradle_ubuntu16
+        image: "nimmis/ubuntu:16.04"
+  roles:
+    - role: provision_docker
+      provision_docker_inventory: "{{ inventory }}"
+
+
+- name: "Install gradle"
+  hosts: docker_containers
+  roles:
+    - role: "geerlingguy.java"
+      java_home: "/etc/alternatives/jre"
+      when: ansible_os_family == "RedHat"
+    - role: "geerlingguy.java"
+      when: ansible_os_family == "Debian"
+    - gradle
+
+
+- name: "Test whether gradle is installed"
+  hosts: docker_containers
+  tasks:
+    - name: "Exectute gradle --version"
+      shell: "bash -lic 'gradle --version'"
+      args:
+        warn: false
